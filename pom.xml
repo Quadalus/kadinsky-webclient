@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>ru.bikkul</groupId>
-    <artifactId>kadinsky-bot</artifactId>
+    <artifactId>kadinsky-webclient</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>kadinsky-webclient</name>
     <description>kadinsky-webclient</description>
