@@ -1,13 +1,13 @@
-package ru.bikkul.kadinsky.webclient;
+package ru.bikkul.kadinsky.bot;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class KadinskyWebclientApplication {
+public class KadinskyBotApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(KadinskyWebclientApplication.class, args);
+        SpringApplication.run(KadinskyBotApplication.class, args);
     }
 
 }
