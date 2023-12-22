@@ -1,7 +1,10 @@
 package ru.bikkul.kadinsky.webclient.service;
 
+import ru.bikkul.kadinsky.webclient.dto.ResutPictureDto;
+
 public interface KandinskyService {
-    void generetaPicture();
+    String generatePicture();
+    ResutPictureDto getStatusPicture(String uuid);
 
     String getRandomStyle();
 

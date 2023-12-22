@@ -4,23 +4,23 @@ import lombok.Data;
 
 @Data
 public class GeneratePictureDto {
-    private final String TYPE = "GENERATE";
+    private final String type = "GENERATE";
 
-    private final int width = 1920;
+    private final int width = 1024;
 
-    private final int height = 1080;
+    private final int height = 576;
 
     private final int num_images = 1;
 
     private final String style;
 
-    private GenerateParams generateParams;
+    private QueryParams generateParams;
 
-    public GeneratePictureDto(String style, GenerateParams generateParams) {
+    public GeneratePictureDto(String style, String generateParams) {
         this.style = style;
-        this.generateParams = generateParams;
+        this.generateParams = new QueryParams(generateParams);
     }
 }
 
-record GenerateParams(String query) {
+record QueryParams(String query) {
 }
