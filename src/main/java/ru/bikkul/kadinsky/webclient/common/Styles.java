@@ -1,18 +1,17 @@
 package ru.bikkul.kadinsky.webclient.common;
 
+import lombok.Getter;
+
+@Getter
 public enum Styles {
+    DEFAULT("DEFAULT"),
     KANDINSKY("KANDINSKY"),
     UHD("UHD"),
-    ANIME("ANIME"),
-    DEFAULT("DEFAULT");
+    ANIME("ANIME");
 
     private final String style;
 
     Styles(String style) {
         this.style = style;
-    }
-
-    public String getStyle() {
-        return style;
     }
 }
