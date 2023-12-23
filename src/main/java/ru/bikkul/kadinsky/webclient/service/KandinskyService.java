@@ -1,12 +1,9 @@
 package ru.bikkul.kadinsky.webclient.service;
 
-import ru.bikkul.kadinsky.webclient.dto.ResutPictureDto;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureResponseFullDto;
+import ru.bikkul.kadinsky.webclient.dto.ResutPictureResponseDto;
 
 public interface KandinskyService {
-    String generatePicture();
-    ResutPictureDto getStatusPicture(String uuid);
-
-    String getRandomStyle();
-
-    String generateRandomText();
+    GenerationPictureResponseFullDto generatePicture(Long charId);
+    ResutPictureResponseDto getStatusPicture(String uuid);
 }

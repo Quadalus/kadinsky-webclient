@@ -8,8 +8,9 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import ru.bikkul.kadinsky.webclient.client.KadinskyClient;
-import ru.bikkul.kadinsky.webclient.dto.GeneratePictureDto;
-import ru.bikkul.kadinsky.webclient.dto.ResutPictureDto;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureRequestDto;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureResponseDto;
+import ru.bikkul.kadinsky.webclient.dto.ResutPictureResponseDto;
 
 @Component
 public class KadinskyClientImpl implements KadinskyClient {
@@ -41,7 +42,7 @@ public class KadinskyClientImpl implements KadinskyClient {
     }
 
     @Override
-    public String generatePicture(GeneratePictureDto queryPicture) {
+    public GenerationPictureResponseDto generatePicture(GenerationPictureRequestDto queryPicture) {
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
         builder.part("params", queryPicture);
         builder.part("model_id", 4);
@@ -54,7 +55,7 @@ public class KadinskyClientImpl implements KadinskyClient {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(builder.build()))
                 .retrieve()
-                .bodyToMono(String.class)
+                .bodyToMono(GenerationPictureResponseDto.class)
                 .block();
     }
 
@@ -64,7 +65,7 @@ public class KadinskyClientImpl implements KadinskyClient {
     }
 
     @Override
-    public ResutPictureDto checkGenerateStatus(String uuid) {
+    public ResutPictureResponseDto checkGenerateStatus(String uuid) {
         return webClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
@@ -72,7 +73,7 @@ public class KadinskyClientImpl implements KadinskyClient {
                         .path(uuid)
                         .build())
                 .retrieve()
-                .bodyToMono(ResutPictureDto.class)
+                .bodyToMono(ResutPictureResponseDto.class)
                 .block();
     }
 }

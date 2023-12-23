@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @Setter
 @Getter
-public class ResutPictureDto {
+public class ResutPictureResponseDto {
     private String uuid;
     private String status;
     private List<String> images;

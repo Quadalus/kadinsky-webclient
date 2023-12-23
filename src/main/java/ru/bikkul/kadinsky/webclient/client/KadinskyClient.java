@@ -1,10 +1,11 @@
 package ru.bikkul.kadinsky.webclient.client;
 
-import ru.bikkul.kadinsky.webclient.dto.GeneratePictureDto;
-import ru.bikkul.kadinsky.webclient.dto.ResutPictureDto;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureRequestDto;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureResponseDto;
+import ru.bikkul.kadinsky.webclient.dto.ResutPictureResponseDto;
 
 public interface KadinskyClient {
-    String generatePicture(GeneratePictureDto queryPicture);
+    GenerationPictureResponseDto generatePicture(GenerationPictureRequestDto queryPicture);
     String checkServiceAvailable();
-    ResutPictureDto checkGenerateStatus(String uuid);
+    ResutPictureResponseDto checkGenerateStatus(String uuid);
 }
