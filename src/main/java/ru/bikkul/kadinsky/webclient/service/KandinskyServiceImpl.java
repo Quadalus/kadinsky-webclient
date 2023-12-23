@@ -16,6 +16,7 @@ import ru.bikkul.kadinsky.webclient.mapper.GenerationPictureMapperDto;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.apache.commons.lang3.ThreadUtils.sleep;
 import static ru.bikkul.kadinsky.webclient.common.GenerateParam.*;
 
 @Slf4j
@@ -47,7 +49,7 @@ public class KandinskyServiceImpl implements KandinskyService {
     public GenerationPictureResponseFullDto generatePicture(Long charId) {
         String style = getRandomStyle();
         String randomText = generateRandomText(style);
-        log.info("random text is:{} |\n style:{}", randomText, style);
+        log.info("random text is:{} | style:{}", randomText, style);
         GenerationPictureRequestDto generatePictureDto = new GenerationPictureRequestDto(style, randomText);
         return GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), charId);
     }
@@ -55,6 +57,9 @@ public class KandinskyServiceImpl implements KandinskyService {
     @Override
     public ResutPictureResponseDto getStatusPicture(String uuid) {
         var resutPictureDto = kadinskyClient.checkGenerateStatus(uuid);
+        String status = resutPictureDto.getStatus();
+
+        resutPictureDto = getResultPictureWithStatusDone(uuid, status, resutPictureDto);
         var images = resutPictureDto.getImages();
         if (!(images == null) && !images.isEmpty()) {
             var s = images.get(0);
@@ -67,6 +72,28 @@ public class KandinskyServiceImpl implements KandinskyService {
             }
         }
         return resutPictureDto;
+    }
+
+    private ResutPictureResponseDto getResultPictureWithStatusDone(String uuid, String status, ResutPictureResponseDto resutPictureDto) {
+        boolean condition = checkStatus(status);
+        while (condition) {
+            resutPictureDto = kadinskyClient.checkGenerateStatus(uuid);
+            status = resutPictureDto.getStatus();
+            condition = checkStatus(status);
+
+            try {
+                if (condition) {
+                    sleep(Duration.ofSeconds(1));
+                }
+            } catch (InterruptedException e) {
+                log.error("current thread interrupt");
+            }
+        }
+        return resutPictureDto;
+    }
+
+    private static boolean checkStatus(String status) {
+        return !StringUtils.containsOnly("DONE", status) && !StringUtils.containsOnly("FAIL", status);
     }
 
     private String getRandomStyle() {
