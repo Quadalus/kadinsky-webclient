@@ -1,51 +1,59 @@
 package ru.bikkul.kadinsky.webclient.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.bikkul.kadinsky.webclient.client.KadinskyClient;
+import ru.bikkul.kadinsky.webclient.common.DefaultStyles;
 import ru.bikkul.kadinsky.webclient.common.GenerateParam;
-import ru.bikkul.kadinsky.webclient.dto.GeneratePictureDto;
-import ru.bikkul.kadinsky.webclient.dto.ResutPictureDto;
+import ru.bikkul.kadinsky.webclient.common.Styles;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureRequestDto;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureResponseFullDto;
+import ru.bikkul.kadinsky.webclient.dto.ResutPictureResponseDto;
+import ru.bikkul.kadinsky.webclient.mapper.GenerationPictureMapperDto;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static ru.bikkul.kadinsky.webclient.common.GenerateParam.*;
-import static ru.bikkul.kadinsky.webclient.common.Styles.*;
 
+@Slf4j
 @Service
 public class KandinskyServiceImpl implements KandinskyService {
     private final List<String> styles;
-    private final Map<GenerateParam, List<String>> generateParams = new HashMap<>();
+    private final List<String> defaultStyles;
     private final KadinskyClient kadinskyClient;
+    private final Map<GenerateParam, List<String>> generationParameters;
 
-    {
-        generateParams.put(LOCATION, LOCATION.getParams());
-        generateParams.put(WEATHER, WEATHER.getParams());
-        generateParams.put(OTHER, OTHER.getParams());
-        generateParams.put(OTHER_WATER, OTHER_WATER.getParams());
-    }
-
+    @Autowired
     public KandinskyServiceImpl(KadinskyClient kadinskyClient) {
         this.kadinskyClient = kadinskyClient;
-        this.styles = List.of(UHD.getStyle(), DEFAULT.getStyle(), ANIME.getStyle(), KANDINSKY.getStyle());
+        this.generationParameters = fillGenerationParameters();
+        this.styles = fillStyles();
+        this.defaultStyles = fillDefaultStyles();
+        fillGenerationParameters();
     }
 
     @Override
-    public String generatePicture() {
+    public GenerationPictureResponseFullDto generatePicture(Long charId) {
         String style = getRandomStyle();
-        GeneratePictureDto generatePictureDto = new GeneratePictureDto(style, generateRandomText());
-        return kadinskyClient.generatePicture(generatePictureDto);
+        String randomText = generateRandomText(style);
+        log.info("random text is:{} |\n style:{}", randomText, style);
+        GenerationPictureRequestDto generatePictureDto = new GenerationPictureRequestDto(style, randomText);
+        return GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), charId);
     }
 
     @Override
-    public ResutPictureDto getStatusPicture(String uuid) {
+    public ResutPictureResponseDto getStatusPicture(String uuid) {
         var resutPictureDto = kadinskyClient.checkGenerateStatus(uuid);
         var images = resutPictureDto.getImages();
         if (!(images == null) && !images.isEmpty()) {
@@ -55,14 +63,15 @@ public class KandinskyServiceImpl implements KandinskyService {
                 FileUtils.writeByteArrayToFile(new File("src/main/resources/picture%d.jpg"
                         .formatted(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE))), decodedBytes);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("error");
             }
         }
         return resutPictureDto;
     }
 
-    public String getRandomStyle() {
-        int random = ThreadLocalRandom.current().nextInt(styles.size());
+    private String getRandomStyle() {
+        double randomRatio = 2.4;
+        int random = ThreadLocalRandom.current().nextInt((int) ((styles.size() - 1) * randomRatio));
         return switch (random) {
             case 1 -> styles.get(1);
             case 2 -> styles.get(2);
@@ -71,28 +80,44 @@ public class KandinskyServiceImpl implements KandinskyService {
         };
     }
 
-    public String generateRandomText() {
+    private String generateRandomText(String style) {
         StringBuilder sb = new StringBuilder("утро");
         String other = getOther();
         String location = getLocation(other);
         String weather = getWeather();
         String otherWater = getOtherWater(location);
-        sb.append(" ")
-                .append(other)
-                .append(" ")
-                .append(location)
-                .append(" ")
-                .append(weather)
-                .append(" ")
-                .append(otherWater);
-        return StringUtils.trim(sb.toString());
+        checkStrIsNotBlank(other, sb);
+        checkStrIsNotBlank(location, sb);
+        checkStrIsNotBlank(weather, sb);
+        checkStrIsNotBlank(otherWater, sb);
+        checkStyliIsDefault(style, sb);
+        return StringUtils.strip(sb.toString());
+    }
+
+    private void checkStyliIsDefault(String style, StringBuilder sb) {
+        if (StringUtils.containsOnly(style, "DEFAULT")) {
+            sb.append(" в стиле ")
+                    .append(getRandomDefaultStyle());
+        }
+    }
+
+    private String getRandomDefaultStyle() {
+        int random = ThreadLocalRandom.current().nextInt(defaultStyles.size());
+        return defaultStyles.get(random);
+    }
+
+    private static void checkStrIsNotBlank(String other, StringBuilder sb) {
+        if (!StringUtils.isBlank(other)) {
+            sb.append(", ")
+                    .append(other);
+        }
     }
 
     private String getRandomWorld(GenerateParam type) {
-        var params = generateParams.get(type);
+        var params = generationParameters.get(type);
         var size = params.size();
-        double randomCoef = type.equals(OTHER) ? 3 : 1.35;
-        var random = ThreadLocalRandom.current().nextInt((int) (size * randomCoef));
+        double randomRatio = type.equals(OTHER) ? 3 : 1.35;
+        var random = ThreadLocalRandom.current().nextInt((int) (size * randomRatio));
         if (random >= size) {
             return "";
         }
@@ -119,5 +144,22 @@ public class KandinskyServiceImpl implements KandinskyService {
 
     private String getOther() {
         return getRandomWorld(OTHER);
+    }
+
+    private static List<String> fillDefaultStyles() {
+        return Arrays.stream(DefaultStyles.values())
+                .map(DefaultStyles::getDefaultStyle)
+                .toList();
+    }
+
+    private static List<String> fillStyles() {
+        return Arrays.stream(Styles.values())
+                .map(Styles::getStyle)
+                .toList();
+    }
+
+    private Map<GenerateParam, List<String>> fillGenerationParameters() {
+        return Arrays.stream(values())
+                .collect(Collectors.toMap(Function.identity(), GenerateParam::getParams));
     }
 }
