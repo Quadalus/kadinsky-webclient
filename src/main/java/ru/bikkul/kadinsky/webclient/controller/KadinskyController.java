@@ -15,12 +15,7 @@ public class KadinskyController {
     private final KandinskyService kandinskyService;
 
     @PostMapping("/generate/{charId}")
-    public GenerationPictureResponseFullDto generatePicture(@PathVariable Long charId) {
+    public ResutPictureResponseDto generatePicture(@PathVariable Long charId) {
         return kandinskyService.generatePicture(charId);
-    }
-
-    @GetMapping("/generate/{uuid}")
-    public ResutPictureResponseDto generatePicture(@PathVariable String uuid) {
-        return kandinskyService.getStatusPicture(uuid);
     }
 }

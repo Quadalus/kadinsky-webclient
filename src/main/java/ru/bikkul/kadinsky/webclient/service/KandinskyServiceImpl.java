@@ -46,16 +46,17 @@ public class KandinskyServiceImpl implements KandinskyService {
     }
 
     @Override
-    public GenerationPictureResponseFullDto generatePicture(Long charId) {
+    public ResutPictureResponseDto generatePicture(Long charId) {
         String style = getRandomStyle();
         String randomText = generateRandomText(style);
         log.info("random text is:{} | style:{}", randomText, style);
         GenerationPictureRequestDto generatePictureDto = new GenerationPictureRequestDto(style, randomText);
-        return GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), charId);
+        var fullResponseDto = GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), charId);
+        var statusPicture = getStatusPicture(fullResponseDto.uuid());
+        return statusPicture;
     }
 
-    @Override
-    public ResutPictureResponseDto getStatusPicture(String uuid) {
+    private ResutPictureResponseDto getStatusPicture(String uuid) {
         var resutPictureDto = kadinskyClient.checkGenerateStatus(uuid);
         String status = resutPictureDto.getStatus();
 
@@ -65,7 +66,7 @@ public class KandinskyServiceImpl implements KandinskyService {
             var s = images.get(0);
             byte[] decodedBytes = Base64.getDecoder().decode(s);
             try {
-                FileUtils.writeByteArrayToFile(new File("src/main/resources/picture%d.jpg"
+                FileUtils.writeByteArrayToFile(new File("src/main/resources/img/picture%d.jpg"
                         .formatted(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE))), decodedBytes);
             } catch (IOException e) {
                 log.error("error");
