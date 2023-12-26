@@ -10,7 +10,6 @@ import ru.bikkul.kadinsky.webclient.common.DefaultStyles;
 import ru.bikkul.kadinsky.webclient.common.GenerateParam;
 import ru.bikkul.kadinsky.webclient.common.Styles;
 import ru.bikkul.kadinsky.webclient.dto.GenerationPictureRequestDto;
-import ru.bikkul.kadinsky.webclient.dto.GenerationPictureResponseFullDto;
 import ru.bikkul.kadinsky.webclient.dto.ResutPictureResponseDto;
 import ru.bikkul.kadinsky.webclient.mapper.GenerationPictureMapperDto;
 
@@ -46,13 +45,14 @@ public class KandinskyServiceImpl implements KandinskyService {
     }
 
     @Override
-    public ResutPictureResponseDto generatePicture(Long charId) {
+    public ResutPictureResponseDto generatePicture(Long chatId) {
         String style = getRandomStyle();
         String randomText = generateRandomText(style);
         log.info("random text is:{} | style:{}", randomText, style);
         GenerationPictureRequestDto generatePictureDto = new GenerationPictureRequestDto(style, randomText);
-        var fullResponseDto = GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), charId);
+        var fullResponseDto = GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), chatId);
         var statusPicture = getStatusPicture(fullResponseDto.uuid());
+        statusPicture.setChatId(chatId);
         return statusPicture;
     }
 

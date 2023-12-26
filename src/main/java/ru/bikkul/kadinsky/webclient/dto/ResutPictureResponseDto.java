@@ -16,4 +16,5 @@ public class ResutPictureResponseDto {
     private String status;
     private List<String> images;
     private String censored;
+    private Long chatId;
 }

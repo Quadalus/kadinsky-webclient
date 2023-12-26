@@ -1,11 +1,9 @@
 package ru.bikkul.kadinsky.webclient.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.bikkul.kadinsky.webclient.dto.GenerationPictureResponseFullDto;
 import ru.bikkul.kadinsky.webclient.dto.ResutPictureResponseDto;
 import ru.bikkul.kadinsky.webclient.service.KandinskyService;
 
