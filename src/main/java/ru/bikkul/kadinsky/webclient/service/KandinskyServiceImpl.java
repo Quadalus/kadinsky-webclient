@@ -1,25 +1,24 @@
 package ru.bikkul.kadinsky.webclient.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import ru.bikkul.kadinsky.webclient.client.KadinskyClient;
 import ru.bikkul.kadinsky.webclient.common.DefaultStyles;
 import ru.bikkul.kadinsky.webclient.common.GenerateParam;
 import ru.bikkul.kadinsky.webclient.common.Styles;
 import ru.bikkul.kadinsky.webclient.dto.GenerationPictureRequestDto;
+import ru.bikkul.kadinsky.webclient.dto.GenerationPictureResponseFullDto;
 import ru.bikkul.kadinsky.webclient.dto.ResutPictureResponseDto;
 import ru.bikkul.kadinsky.webclient.mapper.GenerationPictureMapperDto;
 
-import java.io.File;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -45,15 +44,39 @@ public class KandinskyServiceImpl implements KandinskyService {
     }
 
     @Override
-    public ResutPictureResponseDto generatePicture(Long chatId) {
-        String style = getRandomStyle();
-        String randomText = generateRandomText(style);
-        log.info("random text is:{} | style:{}", randomText, style);
-        GenerationPictureRequestDto generatePictureDto = new GenerationPictureRequestDto(style, randomText);
+    @Async
+    public CompletableFuture<ResutPictureResponseDto> generatePicture(Long chatId) {
+        GenerationPictureRequestDto generatePictureDto = generationData();
         var fullResponseDto = GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), chatId);
         var statusPicture = getStatusPicture(fullResponseDto.uuid());
         statusPicture.setChatId(chatId);
-        return statusPicture;
+        log.info("picture to chat:{} has been generate", chatId);
+        return CompletableFuture.completedFuture(statusPicture);
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<ResutPictureResponseDto> generatePictureWithQuery(Long chatId, Styles style, String query) {
+        var styleStr = switch (style) {
+            case KANDINSKY -> Styles.KANDINSKY.getStyle();
+            case ANIME -> Styles.ANIME.getStyle();
+            case UHD -> Styles.UHD.getStyle();
+            default -> Styles.DEFAULT.getStyle();
+        };
+
+        var generatePictureDto = new GenerationPictureRequestDto(styleStr, query);
+        GenerationPictureResponseFullDto fullResponseDto = GenerationPictureMapperDto.toFullDto(kadinskyClient.generatePicture(generatePictureDto), chatId);
+        var statusPicture = getStatusPicture(fullResponseDto.uuid());
+        statusPicture.setChatId(chatId);
+        log.info("picture to chat:{} has been generate", chatId);
+        return CompletableFuture.completedFuture(statusPicture);
+    }
+
+    private GenerationPictureRequestDto generationData() {
+        var style = getRandomStyle();
+        var randomText = generateRandomText(style);
+        log.info("random text is:{} | style:{}", randomText, style);
+        return new GenerationPictureRequestDto(style, randomText);
     }
 
     private ResutPictureResponseDto getStatusPicture(String uuid) {
@@ -61,22 +84,12 @@ public class KandinskyServiceImpl implements KandinskyService {
         String status = resutPictureDto.getStatus();
 
         resutPictureDto = getResultPictureWithStatusDone(uuid, status, resutPictureDto);
-        var images = resutPictureDto.getImages();
-        if (!(images == null) && !images.isEmpty()) {
-            var s = images.get(0);
-            byte[] decodedBytes = Base64.getDecoder().decode(s);
-            try {
-                FileUtils.writeByteArrayToFile(new File("src/main/resources/img/picture%d.jpg"
-                        .formatted(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE))), decodedBytes);
-            } catch (IOException e) {
-                log.error("error");
-            }
-        }
         return resutPictureDto;
     }
 
     private ResutPictureResponseDto getResultPictureWithStatusDone(String uuid, String status, ResutPictureResponseDto resutPictureDto) {
         boolean condition = checkStatus(status);
+
         while (condition) {
             resutPictureDto = kadinskyClient.checkGenerateStatus(uuid);
             status = resutPictureDto.getStatus();
@@ -98,8 +111,9 @@ public class KandinskyServiceImpl implements KandinskyService {
     }
 
     private String getRandomStyle() {
-        double randomRatio = 2.4;
-        int random = ThreadLocalRandom.current().nextInt((int) ((styles.size() - 1) * randomRatio));
+        var randomRatio = 2.4;
+        var random = ThreadLocalRandom.current().nextInt((int) ((styles.size() - 1) * randomRatio));
+
         return switch (random) {
             case 1 -> styles.get(1);
             case 2 -> styles.get(2);
@@ -109,11 +123,11 @@ public class KandinskyServiceImpl implements KandinskyService {
     }
 
     private String generateRandomText(String style) {
-        StringBuilder sb = new StringBuilder("утро");
-        String other = getOther();
-        String location = getLocation(other);
-        String weather = getWeather();
-        String otherWater = getOtherWater(location);
+        var sb = new StringBuilder("утро");
+        var other = getOther();
+        var location = getLocation(other);
+        var weather = getWeather();
+        var otherWater = getOtherWater(location);
         checkStrIsNotBlank(other, sb);
         checkStrIsNotBlank(location, sb);
         checkStrIsNotBlank(weather, sb);
@@ -130,7 +144,7 @@ public class KandinskyServiceImpl implements KandinskyService {
     }
 
     private String getRandomDefaultStyle() {
-        int random = ThreadLocalRandom.current().nextInt(defaultStyles.size());
+        var random = ThreadLocalRandom.current().nextInt(defaultStyles.size());
         return defaultStyles.get(random);
     }
 
