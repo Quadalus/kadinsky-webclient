@@ -6,4 +6,5 @@
 
 ##### Стэк технологий:
   - Java 17
+  - lombok
   - Spring (boot, webflux(client))
